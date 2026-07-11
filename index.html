@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitLog — Mapeador de Exercícios</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c8ff00">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitLog">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a38;
+    --accent: #c8ff00;
+    --accent2: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --red: #ff4545;
+    --green: #39ff9a;
+    --blue: #4da6ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,255,0,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,255,0,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 36px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.4rem;
+    letter-spacing: -2px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .date-badge {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 4px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+  }
+  .stat-card:nth-child(1)::before { background: var(--accent); }
+  .stat-card:nth-child(2)::before { background: var(--accent2); }
+  .stat-card:nth-child(3)::before { background: var(--green); }
+
+  .stat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .stat-value small {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+
+  /* Progressive banner */
+  .prog-banner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 28px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .prog-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at right center, rgba(200,255,0,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .prog-left { display: flex; flex-direction: column; gap: 4px; }
+  .prog-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
+  .prog-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; color: var(--text); }
+  .prog-sub   { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+  .prog-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+  .prog-number { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 3rem; color: var(--accent); line-height: 1; letter-spacing: -2px; }
+  .prog-unit  { font-size: 0.65rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .prog-status { font-size: 0.75rem; font-weight: 500; }
+  .prog-status.train { color: var(--accent); }
+  .prog-status.rest  { color: var(--accent2); font-style: italic; }
+
+  /* Panel title */
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── TREINO FIXO ──────────────────────────────── */
+  .treino-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 28px;
+  }
+
+  .treino-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .treino-progress {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .treino-progress span {
+    color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+  }
+
+  .treino-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .treino-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    user-select: none;
+  }
+
+  .treino-item:hover { border-color: #3a3a50; background: #0e0e16; }
+
+  .treino-item.done {
+    background: rgba(57,255,154,0.04);
+    border-color: rgba(57,255,154,0.2);
+  }
+
+  /* Custom checkbox */
+  .t-check {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+    color: transparent;
+  }
+
+  .treino-item.done .t-check {
+    background: var(--green);
+    border-color: var(--green);
+    color: #0a0a0f;
+  }
+
+  .t-emoji { font-size: 1.1rem; flex-shrink: 0; }
+
+  .t-info { flex: 1; min-width: 0; }
+
+  .t-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+    transition: color 0.2s;
+  }
+
+  .treino-item.done .t-name {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .t-cat {
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 2px;
+  }
+
+  .t-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .t-qty {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--accent);
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .treino-item.done .t-qty { color: var(--muted); }
+
+  .t-unit {
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+
+  /* ── Timer da Prancha ───────────────────────────────────────── */
+  .timer-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+    margin-top: 4px;
+  }
+  .timer-btn:hover { opacity: 0.85; }
+  .timer-btn:active { transform: scale(0.96); }
+  .timer-btn.running { background: var(--accent2); }
+  .timer-btn.done-btn { background: var(--green); }
+
+  .timer-display {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -1px;
+    transition: color 0.3s;
+  }
+  .timer-display.running { color: var(--accent2); }
+  .timer-display.finished { color: var(--green); }
+
+  /* Modal overlay */
+  .timer-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .timer-modal.open { display: flex; }
+
+  .timer-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 48px;
+    text-align: center;
+    position: relative;
+    min-width: 280px;
+  }
+
+  .timer-box-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .timer-box-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--text);
+    margin-bottom: 28px;
+  }
+
+  .timer-ring-wrap {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 28px;
+  }
+
+  .timer-ring-wrap svg {
+    transform: rotate(-90deg);
+    width: 160px; height: 160px;
+  }
+
+  .timer-ring-bg { fill: none; stroke: var(--surface2); stroke-width: 8; }
+  .timer-ring-fg { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+  .timer-ring-fg.running { stroke: var(--accent2); }
+  .timer-ring-fg.finished { stroke: var(--green); }
+
+  .timer-big {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .timer-big-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.8rem;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -2px;
+    transition: color 0.3s;
+  }
+  .timer-big-num.running  { color: var(--accent2); }
+  .timer-big-num.finished { color: var(--green); }
+
+  .timer-big-unit {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  .timer-controls { display: flex; gap: 10px; justify-content: center; }
+
+  .tbtn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .tbtn:hover { opacity: 0.85; }
+  .tbtn-start  { background: var(--accent);  color: var(--bg); }
+  .tbtn-pause  { background: var(--accent2); color: var(--bg); }
+  .tbtn-reset  { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .tbtn-close  { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .tbtn-finish { background: var(--green); color: var(--bg); }
+
+  /* rest day overlay */
+  .rest-overlay {
+    text-align: center;
+    padding: 40px 20px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+  .rest-overlay .rest-icon { font-size: 2.5rem; margin-bottom: 10px; }
+  .rest-overlay .rest-msg { font-size: 0.75rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .rest-overlay .rest-next { font-size: 0.7rem; color: var(--accent2); margin-top: 6px; }
+
+  /* Weekly chart */
+  .chart-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-top: 8px;
+  }
+
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 80px;
+    margin-top: 20px;
+  }
+
+  .chart-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .chart-bar-wrap { width: 100%; flex: 1; display: flex; align-items: flex-end; }
+  .chart-bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.5s cubic-bezier(0.34,1.56,0.64,1); min-height: 4px; }
+  .chart-bar.today { background: var(--accent); }
+  .chart-bar:not(.today) { background: linear-gradient(to top, var(--accent2), transparent); opacity: 0.4; }
+  .chart-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .chart-label.today-label { color: var(--accent); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px; right: 30px;
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 999;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  @media (max-width: 600px) {
+    .stats-bar { grid-template-columns: 1fr 1fr; }
+    .stats-bar .stat-card:last-child { grid-column: 1/-1; }
+    .t-cat { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">FIT<span>LOG</span></div>
+    <div class="date-badge" id="dateBadge"></div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Sessão</div>
+      <div class="stat-value" id="statSessao">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Concluídos</div>
+      <div class="stat-value" id="statDone">0 <small>/ 7</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Esta semana</div>
+      <div class="stat-value" id="statWeek">0 <small>treinos</small></div>
+    </div>
+  </div>
+
+  <!-- Banner progressivo -->
+  <div class="prog-banner" id="progBanner"></div>
+
+  <!-- Treino fixo -->
+  <div class="treino-panel">
+    <div class="treino-header">
+      <div class="panel-title" style="margin-bottom:0">Treino de Hoje</div>
+      <div class="treino-progress" id="treinoProgress"></div>
+    </div>
+    <div class="treino-list" id="treinoList"></div>
+  </div>
+
+  <!-- Gráfico semanal -->
+  <div class="chart-panel">
+    <div class="panel-title">Histórico Semanal</div>
+    <div class="chart-bars" id="chartBars"></div>
+  </div>
+
+</div>
+
+<!-- Timer Modal -->
+<div class="timer-modal" id="timerModal">
+  <div class="timer-box">
+    <div class="timer-box-label">Exercício · Core</div>
+    <div class="timer-box-title">🧘 Prancha</div>
+    <div class="timer-ring-wrap">
+      <svg viewBox="0 0 160 160">
+        <circle class="timer-ring-bg" cx="80" cy="80" r="68"/>
+        <circle class="timer-ring-fg" id="timerRing" cx="80" cy="80" r="68"/>
+      </svg>
+      <div class="timer-big">
+        <span class="timer-big-num" id="timerBigNum">00</span>
+        <span class="timer-big-unit">segundos</span>
+      </div>
+    </div>
+    <div class="timer-controls" id="timerControls"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── localStorage helpers ────────────────────────────────────────
+  function setCookie(name, value) {
+    localStorage.setItem(name, JSON.stringify(value));
+  }
+  function getCookie(name) {
+    try { return JSON.parse(localStorage.getItem(name)); }
+    catch { return null; }
+  }
+
+  // ── Cálculo progressivo ─────────────────────────────────────────
+  function calcSession() {
+    const start = new Date('2026-01-01');
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    start.setHours(0,0,0,0);
+    const diff = Math.round((today - start) / 86400000);
+    const isTraining = diff % 2 === 0;
+    const reps = Math.floor(diff / 2) + 1;
+    return { isTraining, reps, nextReps: reps + (isTraining ? 0 : 1) };
+  }
+
+  // ── Lista de exercícios fixos ───────────────────────────────────
+  // unit: 'reps' usa o número progressivo | 'seg' usa segundos progressivos
+  const EXERCISES = [
+    { id: 'flexao',      emoji: '💪', name: 'Flexão de Braço',            cat: 'Musculação', unit: 'reps' },
+    { id: 'rosca',       emoji: '🏋️', name: 'Rosca Direta',               cat: 'Musculação', unit: 'reps' },
+    { id: 'afundo',      emoji: '🦵', name: 'Avanços (Afundos)',           cat: 'Musculação', unit: 'reps' },
+    { id: 'agachamento', emoji: '🏃', name: 'Agachamento',                 cat: 'Musculação', unit: 'reps' },
+    { id: 'prancha',     emoji: '🧘', name: 'Prancha',                     cat: 'Core',       unit: 'seg', timer: true },
+    { id: 'pantorrha',   emoji: '🦶', name: 'Levantamento de Panturrilha', cat: 'Musculação', unit: 'reps' },
+    { id: 'gluteo',      emoji: '🍑', name: 'Flexão de Glúteo',            cat: 'Musculação', unit: 'reps' },
+    { id: 'puxada',      emoji: '🙌', name: 'Puxada Inclinada',            cat: 'Musculação', unit: 'reps' },
+  ];
+
+  // ── Estado dos checks (localStorage por data) ─────────────────
+  const todayKey = () => new Date().toISOString().slice(0,10);
+
+  function loadChecks() {
+    const data = getCookie('fitlog_checks') || {};
+    return data[todayKey()] || {};
+  }
+
+  function saveChecks(checks) {
+    const data = getCookie('fitlog_checks') || {};
+    data[todayKey()] = checks;
+    // guarda últimos 14 dias
+    const keys = Object.keys(data).sort().slice(-14);
+    const pruned = {};
+    keys.forEach(k => pruned[k] = data[k]);
+    setCookie('fitlog_checks', pruned);
+  }
+
+  function weekDoneCount() {
+    const data = getCookie('fitlog_checks') || {};
+    let count = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const k = d.toISOString().slice(0,10);
+      if (data[k]) {
+        const vals = Object.values(data[k]);
+        if (vals.some(v => v)) count++;
+      }
+    }
+    return count;
+  }
+
+  // ── Render banner ───────────────────────────────────────────────
+  function renderBanner(sess) {
+    const banner = document.getElementById('progBanner');
+    if (sess.isTraining) {
+      banner.innerHTML = `
+        <div class="prog-left">
+          <span class="prog-label">Meta progressiva de hoje</span>
+          <span class="prog-title">Progressão a cada 2 dias</span>
+          <span class="prog-sub">Iniciou em 01/jan/2026 · Sessão nº ${sess.reps}</span>
+        </div>
+        <div class="prog-right">
+          <span class="prog-number">${sess.reps}</span>
+          <span class="prog-unit">reps / seg</span>
+          <span class="prog-status train">✓ DIA DE TREINO</span>
+        </div>`;
+    } else {
+      banner.innerHTML = `
+        <div class="prog-left">
+          <span class="prog-label">Meta progressiva</span>
+          <span class="prog-title">Progressão a cada 2 dias</span>
+          <span class="prog-sub">Amanhã é dia de treino · Sessão nº ${sess.nextReps}</span>
+        </div>
+        <div class="prog-right">
+          <span class="prog-number">${sess.nextReps}</span>
+          <span class="prog-unit">amanhã</span>
+          <span class="prog-status rest">— DIA DE DESCANSO</span>
+        </div>`;
+    }
+  }
+
+  // ── Render treino ───────────────────────────────────────────────
+  function renderTreino() {
+    const sess   = calcSession();
+    const checks = loadChecks();
+    const list   = document.getElementById('treinoList');
+    const prog   = document.getElementById('treinoProgress');
+
+    if (!sess.isTraining) {
+      list.innerHTML = `
+        <div class="rest-overlay">
+          <div class="rest-icon">😴</div>
+          <div class="rest-msg">Hoje é dia de descanso</div>
+          <div class="rest-next">Amanhã: ${sess.nextReps} reps / ${sess.nextReps} seg</div>
+        </div>`;
+      prog.innerHTML = '';
+      return;
+    }
+
+    const n = sess.reps;
+    const done = EXERCISES.filter(e => checks[e.id]).length;
+    prog.innerHTML = `<span>${done}</span> / ${EXERCISES.length} concluídos`;
+
+    list.innerHTML = EXERCISES.map(ex => {
+      const isDone  = !!checks[ex.id];
+      const qty     = n;
+      const unit    = ex.unit === 'seg' ? 'seg' : 'reps';
+      const isTimer = !!ex.timer;
+      const timerBtn = isTimer && !isDone
+        ? `<button class="timer-btn" onclick="event.stopPropagation(); openTimer(${qty})">▶ INICIAR</button>`
+        : '';
+      return `
+        <div class="treino-item ${isDone ? 'done' : ''}" onclick="${isTimer ? '' : `toggleCheck('${ex.id}')`}" ${isTimer ? '' : ''}>
+          <div class="t-check" onclick="${isTimer ? `event.stopPropagation(); toggleCheck('${ex.id}')` : `toggleCheck('${ex.id}')`}">${isDone ? '✓' : ''}</div>
+          <span class="t-emoji">${ex.emoji}</span>
+          <div class="t-info">
+            <div class="t-name">${ex.name}</div>
+            <div class="t-cat">${ex.cat}</div>
+            ${timerBtn}
+          </div>
+          <div class="t-meta">
+            <span class="t-qty ${isTimer ? 'timer-display' : ''}" id="${isTimer ? 'timerInline' : ''}">${qty}</span>
+            <span class="t-unit">${unit}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Stats
+    document.getElementById('statSessao').innerHTML = `${n} <small>sessão</small>`;
+    document.getElementById('statDone').innerHTML   = `${done} <small>/ ${EXERCISES.length}</small>`;
+    document.getElementById('statWeek').innerHTML   = `${weekDoneCount()} <small>treinos</small>`;
+
+    renderChart();
+  }
+
+  // ── Toggle check ────────────────────────────────────────────────
+  function toggleCheck(id) {
+    const checks = loadChecks();
+    checks[id] = !checks[id];
+    saveChecks(checks);
+    renderTreino();
+    const ex = EXERCISES.find(e => e.id === id);
+    showToast(checks[id] ? `✓ ${ex.name} concluído!` : `${ex.name} desmarcado`);
+  }
+
+
+  // ── Timer da Prancha ────────────────────────────────────────────
+  let timerTotal = 0;
+  let timerLeft  = 0;
+  let timerInterval = null;
+  let timerRunning  = false;
+
+  const CIRCUMFERENCE = 2 * Math.PI * 68; // r=68
+
+  function openTimer(seconds) {
+    timerTotal   = seconds;
+    timerLeft    = seconds;
+    timerRunning = false;
+    clearInterval(timerInterval);
+    document.getElementById('timerModal').classList.add('open');
+    updateTimerUI();
+  }
+
+  function closeTimer() {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('timerModal').classList.remove('open');
+  }
+
+  function startTimer() {
+    if (timerLeft <= 0) return;
+    timerRunning = true;
+    updateTimerUI();
+    timerInterval = setInterval(() => {
+      timerLeft--;
+      updateTimerUI();
+      if (timerLeft <= 0) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        finishTimer();
+      }
+    }, 1000);
+  }
+
+  function pauseTimer() {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    updateTimerUI();
+  }
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    timerLeft = timerTotal;
+    updateTimerUI();
+  }
+
+  function finishTimer() {
+    // mark prancha as done
+    const checks = loadChecks();
+    checks['prancha'] = true;
+    saveChecks(checks);
+    updateTimerUI();
+    showToast('✓ Prancha concluída!');
+    setTimeout(() => { closeTimer(); renderTreino(); }, 1200);
+  }
+
+  function updateTimerUI() {
+    const num  = document.getElementById('timerBigNum');
+    const ring = document.getElementById('timerRing');
+    const ctrl = document.getElementById('timerControls');
+    if (!num) return;
+
+    const pct    = timerTotal > 0 ? timerLeft / timerTotal : 1;
+    const offset = CIRCUMFERENCE * (1 - pct);
+    ring.style.strokeDasharray  = CIRCUMFERENCE;
+    ring.style.strokeDashoffset = offset;
+
+    const finished = timerLeft <= 0;
+
+    // color states
+    num.className  = 'timer-big-num'  + (finished ? ' finished' : timerRunning ? ' running' : '');
+    ring.className = 'timer-ring-fg'  + (finished ? ' finished' : timerRunning ? ' running' : '');
+
+    num.textContent = String(timerLeft).padStart(2, '0');
+
+    // inline display
+    const inline = document.getElementById('timerInline');
+    if (inline) {
+      inline.textContent = timerLeft;
+      inline.className = 'timer-display t-qty' + (finished ? ' finished' : timerRunning ? ' running' : '');
+    }
+
+    // controls
+    if (finished) {
+      ctrl.innerHTML = `<button class="tbtn tbtn-finish" onclick="finishTimer()">✓ CONCLUIR</button>`;
+    } else if (timerRunning) {
+      ctrl.innerHTML = `
+        <button class="tbtn tbtn-pause"  onclick="pauseTimer()">⏸ PAUSAR</button>
+        <button class="tbtn tbtn-reset"  onclick="resetTimer()">↺</button>
+        <button class="tbtn tbtn-close"  onclick="closeTimer()">✕</button>`;
+    } else {
+      ctrl.innerHTML = `
+        <button class="tbtn tbtn-start"  onclick="startTimer()">▶ ${timerLeft < timerTotal ? 'CONTINUAR' : 'INICIAR'}</button>
+        <button class="tbtn tbtn-reset"  onclick="resetTimer()">↺</button>
+        <button class="tbtn tbtn-close"  onclick="closeTimer()">✕</button>`;
+    }
+  }
+
+  // close modal on backdrop click
+  document.getElementById('timerModal').addEventListener('click', function(e) {
+    if (e.target === this) closeTimer();
+  });
+
+  // ── Chart semanal ───────────────────────────────────────────────
+  function renderChart() {
+    const data = getCookie('fitlog_checks') || {};
+    const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const counts = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const k = d.toISOString().slice(0,10);
+      const checks = data[k] || {};
+      const n = Object.values(checks).filter(v => v).length;
+      counts.push({ day: days[d.getDay()], count: n, isToday: i === 0 });
+    }
+    const max = Math.max(...counts.map(c => c.count), 1);
+    document.getElementById('chartBars').innerHTML = counts.map(c => {
+      const pct = Math.max((c.count / max) * 100, 5);
+      return `
+        <div class="chart-day">
+          <div class="chart-bar-wrap">
+            <div class="chart-bar ${c.isToday ? 'today' : ''}" style="height:${pct}%"></div>
+          </div>
+          <span class="chart-label ${c.isToday ? 'today-label' : ''}">${c.day}</span>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Toast ────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ── Date badge ───────────────────────────────────────────────────
+  function setDateBadge() {
+    const opts = { weekday: 'short', day: '2-digit', month: 'short' };
+    document.getElementById('dateBadge').textContent =
+      new Date().toLocaleDateString('pt-BR', opts).toUpperCase();
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  setDateBadge();
+  const sess = calcSession();
+  renderBanner(sess);
+  renderTreino();
+  // stat-sessao no descanso
+  if (!sess.isTraining) {
+    document.getElementById('statSessao').innerHTML = `— <small>descanso</small>`;
+    document.getElementById('statWeek').innerHTML   = `${weekDoneCount()} <small>treinos</small>`;
+    renderChart();
+  }
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/fitlog/sw.js')
+        .then(() => console.log('FitLog SW registrado'))
+        .catch(e => console.warn('SW erro:', e));
+    });
+  }
+</script>
+</body>
+</html>
