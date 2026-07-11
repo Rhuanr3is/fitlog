@@ -2,7 +2,7 @@ const CACHE = 'fitlog-v1';
 const ASSETS = [
   '/fitlog/index.html',
   '/fitlog/manifest.json',
-  '/fitlog/icon-192.png',
+  '/fitlog/icon-193.png',
   '/fitlog/icon-512.png'
 ];
 
