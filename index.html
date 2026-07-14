@@ -304,6 +304,87 @@
   }
 
 
+
+  /* ── Períodos ───────────────────────────────────────────────── */
+  .period-block {
+    margin-bottom: 16px;
+  }
+
+  .period-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border-left: 3px solid var(--border);
+  }
+
+  .period-header.morning  { border-left-color: #ffcc00; }
+  .period-header.afternoon{ border-left-color: var(--accent2); }
+  .period-header.night    { border-left-color: var(--blue); }
+
+  .period-emoji { font-size: 1.1rem; }
+
+  .period-info { flex: 1; }
+
+  .period-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  .period-time {
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .period-reps {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--accent);
+  }
+
+  .period-reps small {
+    font-size: 0.6rem;
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 2px;
+    letter-spacing: 1px;
+  }
+
+  .period-header.done-period { opacity: 0.5; }
+  .period-header.done-period .period-reps { color: var(--green); }
+
+  /* Notif button */
+  .notif-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .notif-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .notif-btn.active { border-color: var(--green); color: var(--green); background: rgba(57,255,154,0.06); }
+  .notif-btn.denied { border-color: var(--red); color: var(--red); cursor: not-allowed; }
+
   /* ── Timer da Prancha ───────────────────────────────────────── */
   .timer-btn {
     background: var(--accent);
@@ -537,6 +618,9 @@
       <div class="panel-title" style="margin-bottom:0">Treino de Hoje</div>
       <div class="treino-progress" id="treinoProgress"></div>
     </div>
+    <button class="notif-btn" id="notifBtn" onclick="requestNotifications()">
+      🔔 ATIVAR LEMBRETES (8h · 14h · 23h)
+    </button>
     <div class="treino-list" id="treinoList"></div>
   </div>
 
@@ -667,6 +751,20 @@
     }
   }
 
+  // ── Períodos do dia ─────────────────────────────────────────────
+  const PERIODS = [
+    { id: 'morning',   emoji: '🌅', name: 'Manhã',  time: '08:00', cls: 'morning'   },
+    { id: 'afternoon', emoji: '☀️',  name: 'Tarde',  time: '14:00', cls: 'afternoon' },
+    { id: 'night',     emoji: '🌙', name: 'Noite',  time: '23:00', cls: 'night'     },
+  ];
+
+  // Distribui reps nos 3 períodos (resto vai pro último)
+  function splitReps(total) {
+    const base = Math.floor(total / 3);
+    const rest = total - base * 2;
+    return [base, base, rest];
+  }
+
   // ── Render treino ───────────────────────────────────────────────
   function renderTreino() {
     const sess   = calcSession();
@@ -682,53 +780,80 @@
           <div class="rest-next">Amanhã: ${sess.nextReps} reps / ${sess.nextReps} seg</div>
         </div>`;
       prog.innerHTML = '';
+      updateNotifBtn();
       return;
     }
 
-    const n = sess.reps;
+    const n    = sess.reps;
+    const reps = splitReps(n); // [manhã, tarde, noite]
     const done = EXERCISES.filter(e => checks[e.id]).length;
     prog.innerHTML = `<span>${done}</span> / ${EXERCISES.length} concluídos`;
 
-    list.innerHTML = EXERCISES.map(ex => {
-      const isDone  = !!checks[ex.id];
-      const qty     = n;
-      const unit    = ex.unit === 'seg' ? 'seg' : 'reps';
-      const isTimer = !!ex.timer;
-      const timerBtn = isTimer && !isDone
-        ? `<button class="timer-btn" onclick="event.stopPropagation(); openTimer(${qty})">▶ INICIAR</button>`
-        : '';
+    list.innerHTML = PERIODS.map((period, pi) => {
+      const periodReps = reps[pi];
+      const periodChecks = EXERCISES.map(ex => !!checks[`${ex.id}_${period.id}`]);
+      const allDone = periodChecks.every(Boolean);
+
+      const items = EXERCISES.map(ex => {
+        const key    = `${ex.id}_${period.id}`;
+        const isDone = !!checks[key];
+        const isTimer = !!ex.timer;
+        const timerBtn = isTimer && !isDone
+          ? `<button class="timer-btn" onclick="event.stopPropagation(); openTimer(${periodReps}, '${key}')">▶ INICIAR</button>`
+          : '';
+        return `
+          <div class="treino-item ${isDone ? 'done' : ''}">
+            <div class="t-check" onclick="toggleCheck('${key}')">${isDone ? '✓' : ''}</div>
+            <span class="t-emoji">${ex.emoji}</span>
+            <div class="t-info">
+              <div class="t-name">${ex.name}</div>
+              <div class="t-cat">${ex.cat}</div>
+              ${timerBtn}
+            </div>
+            <div class="t-meta">
+              <span class="t-qty ${isTimer ? 'timer-display' : ''}" id="${isTimer ? `timerInline_${period.id}` : ''}">${periodReps}</span>
+              <span class="t-unit">${ex.unit === 'seg' ? 'seg' : 'reps'}</span>
+            </div>
+          </div>`;
+      }).join('');
+
       return `
-        <div class="treino-item ${isDone ? 'done' : ''}" onclick="${isTimer ? '' : `toggleCheck('${ex.id}')`}" ${isTimer ? '' : ''}>
-          <div class="t-check" onclick="${isTimer ? `event.stopPropagation(); toggleCheck('${ex.id}')` : `toggleCheck('${ex.id}')`}">${isDone ? '✓' : ''}</div>
-          <span class="t-emoji">${ex.emoji}</span>
-          <div class="t-info">
-            <div class="t-name">${ex.name}</div>
-            <div class="t-cat">${ex.cat}</div>
-            ${timerBtn}
+        <div class="period-block">
+          <div class="period-header ${period.cls} ${allDone ? 'done-period' : ''}">
+            <span class="period-emoji">${period.emoji}</span>
+            <div class="period-info">
+              <div class="period-name">${period.name}</div>
+              <div class="period-time">${period.time}</div>
+            </div>
+            <div class="period-reps">${periodReps}<small>${ex => ex && ex.unit === 'seg' ? 'seg' : 'reps'}</small></div>
           </div>
-          <div class="t-meta">
-            <span class="t-qty ${isTimer ? 'timer-display' : ''}" id="${isTimer ? 'timerInline' : ''}">${qty}</span>
-            <span class="t-unit">${unit}</span>
-          </div>
+          <div class="treino-list">${items}</div>
         </div>`;
     }).join('');
 
+    // fix period-reps label (reps/seg mixed — show reps for simplicity)
+    document.querySelectorAll('.period-reps small').forEach(el => el.textContent = 'reps');
+
     // Stats
+    const totalChecks = EXERCISES.length * 3;
+    const doneChecks  = Object.values(checks).filter(v => v).length;
     document.getElementById('statSessao').innerHTML = `${n} <small>sessão</small>`;
-    document.getElementById('statDone').innerHTML   = `${done} <small>/ ${EXERCISES.length}</small>`;
+    document.getElementById('statDone').innerHTML   = `${doneChecks} <small>/ ${totalChecks}</small>`;
     document.getElementById('statWeek').innerHTML   = `${weekDoneCount()} <small>treinos</small>`;
 
+    updateNotifBtn();
     renderChart();
   }
 
   // ── Toggle check ────────────────────────────────────────────────
-  function toggleCheck(id) {
+  function toggleCheck(key) {
     const checks = loadChecks();
-    checks[id] = !checks[id];
+    checks[key] = !checks[key];
     saveChecks(checks);
     renderTreino();
-    const ex = EXERCISES.find(e => e.id === id);
-    showToast(checks[id] ? `✓ ${ex.name} concluído!` : `${ex.name} desmarcado`);
+    const baseId = key.split('_')[0];
+    const ex = EXERCISES.find(e => e.id === baseId);
+    showToast(checks[key] ? `✓ ${ex ? ex.name : key} concluído!` : `${ex ? ex.name : key} desmarcado`);
   }
 
 
@@ -740,9 +865,12 @@
 
   const CIRCUMFERENCE = 2 * Math.PI * 68; // r=68
 
-  function openTimer(seconds) {
+  let timerKey = 'prancha_morning';
+
+  function openTimer(seconds, key) {
     timerTotal   = seconds;
     timerLeft    = seconds;
+    timerKey     = key || 'prancha_morning';
     timerRunning = false;
     clearInterval(timerInterval);
     document.getElementById('timerModal').classList.add('open');
@@ -784,9 +912,8 @@
   }
 
   function finishTimer() {
-    // mark prancha as done
     const checks = loadChecks();
-    checks['prancha'] = true;
+    checks[timerKey] = true;
     saveChecks(checks);
     updateTimerUI();
     showToast('✓ Prancha concluída!');
@@ -840,6 +967,77 @@
     if (e.target === this) closeTimer();
   });
 
+
+  // ── Notificações Push ───────────────────────────────────────────
+  function updateNotifBtn() {
+    const btn = document.getElementById('notifBtn');
+    if (!btn) return;
+    if (!('Notification' in window)) {
+      btn.textContent = '🔕 Notificações não suportadas';
+      btn.classList.add('denied');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      btn.textContent = '✓ LEMBRETES ATIVADOS (8h · 14h · 23h)';
+      btn.classList.add('active');
+    } else if (Notification.permission === 'denied') {
+      btn.textContent = '🔕 Notificações bloqueadas — libere nas configs do browser';
+      btn.classList.add('denied');
+    } else {
+      btn.textContent = '🔔 ATIVAR LEMBRETES (8h · 14h · 23h)';
+      btn.classList.remove('active','denied');
+    }
+  }
+
+  async function requestNotifications() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'denied') return;
+
+    const perm = await Notification.requestPermission();
+    updateNotifBtn();
+
+    if (perm === 'granted') {
+      scheduleNotifications();
+      showToast('✓ Lembretes ativados!');
+    }
+  }
+
+  function scheduleNotifications() {
+    // Usa setTimeout calculando ms até cada horário hoje
+    const sess  = calcSession();
+    if (!sess.isTraining) return;
+
+    const reps  = splitReps(sess.reps);
+    const now   = new Date();
+
+    const slots = [
+      { hour: 8,  min: 0,  label: '🌅 Manhã',  r: reps[0] },
+      { hour: 14, min: 0,  label: '☀️ Tarde',   r: reps[1] },
+      { hour: 23, min: 0,  label: '🌙 Noite',   r: reps[2] },
+    ];
+
+    slots.forEach(slot => {
+      const target = new Date();
+      target.setHours(slot.hour, slot.min, 0, 0);
+      const diff = target - now;
+      if (diff > 0) {
+        setTimeout(() => {
+          new Notification('FitLog — ' + slot.label, {
+            body: `Hora do treino! ${slot.r} repetições de cada exercício.`,
+            icon: 'icon-193.png',
+            badge: 'icon-193.png',
+            tag: 'fitlog-' + slot.hour,
+          });
+        }, diff);
+      }
+    });
+  }
+
+  // Agenda ao carregar se já tiver permissão
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    scheduleNotifications();
+  }
+
   // ── Chart semanal ───────────────────────────────────────────────
   function renderChart() {
     const data = getCookie('fitlog_checks') || {};
@@ -885,6 +1083,7 @@
 
   // ── Init ─────────────────────────────────────────────────────────
   setDateBadge();
+  updateNotifBtn();
   const sess = calcSession();
   renderBanner(sess);
   renderTreino();
