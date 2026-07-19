@@ -11,6 +11,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FitLog">
 <link rel="apple-touch-icon" href="icon-193.png">
+<!-- Day.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/locale/pt-br.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Howler.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+<!-- Canvas Confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -305,6 +314,44 @@
 
 
 
+
+  /* ── Dia de Descanso Ativo ──────────────────────────────────── */
+  .rest-active-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .rest-active-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .rest-next-badge {
+    text-align: center;
+    padding: 10px;
+    background: rgba(200,255,0,0.04);
+    border: 1px dashed rgba(200,255,0,0.2);
+    border-radius: 8px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .rest-next-badge span { color: var(--accent); font-weight: 700; }
+
+  .rest-category {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin: 14px 0 8px;
+    padding-left: 4px;
+  }
+
   /* ── Períodos ───────────────────────────────────────────────── */
   .period-block {
     margin-bottom: 16px;
@@ -542,21 +589,7 @@
     margin-top: 8px;
   }
 
-  .chart-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    height: 80px;
-    margin-top: 20px;
-  }
-
-  .chart-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
-  .chart-bar-wrap { width: 100%; flex: 1; display: flex; align-items: flex-end; }
-  .chart-bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.5s cubic-bezier(0.34,1.56,0.64,1); min-height: 4px; }
-  .chart-bar.today { background: var(--accent); }
-  .chart-bar:not(.today) { background: linear-gradient(to top, var(--accent2), transparent); opacity: 0.4; }
-  .chart-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-  .chart-label.today-label { color: var(--accent); }
+  /* chart rendered by Chart.js */
 
   /* Toast */
   .toast {
@@ -627,7 +660,9 @@
   <!-- Gráfico semanal -->
   <div class="chart-panel">
     <div class="panel-title">Histórico Semanal</div>
-    <div class="chart-bars" id="chartBars"></div>
+    <div style="position:relative; height:160px;">
+      <canvas id="chartBars"></canvas>
+    </div>
   </div>
 
 </div>
@@ -688,7 +723,7 @@
     { id: 'puxada',      emoji: '🙌', name: 'Puxada Inclinada',            cat: 'Musculação', unit: 'reps' },
   ];
 
-  // ── Estado dos checks (localStorage por data) ─────────────────
+    // ── Estado dos checks (localStorage por data) ─────────────────
   const todayKey = () => new Date().toISOString().slice(0,10);
 
   function loadChecks() {
@@ -773,14 +808,63 @@
     const prog   = document.getElementById('treinoProgress');
 
     if (!sess.isTraining) {
-      list.innerHTML = `
-        <div class="rest-overlay">
-          <div class="rest-icon">😴</div>
-          <div class="rest-msg">Hoje é dia de descanso</div>
-          <div class="rest-next">Amanhã: ${sess.nextReps} reps / ${sess.nextReps} seg</div>
-        </div>`;
-      prog.innerHTML = '';
+      const restExercises = [
+        // Yoga
+        { emoji: '🧘', name: 'Saudação ao Sol',         cat: 'yoga',     dur: '5 min',  desc: 'Fluxo completo, 3 rounds' },
+        { emoji: '🌿', name: 'Postura do Pombo',        cat: 'yoga',     dur: '2 min',  desc: 'Cada lado — abre quadril' },
+        { emoji: '🌊', name: 'Gato e Vaca',             cat: 'yoga',     dur: '2 min',  desc: 'Mobiliza coluna torácica' },
+        // Pilates
+        { emoji: '💫', name: 'The Hundred',             cat: 'pilates',  dur: '2 min',  desc: 'Ativa core profundo' },
+        { emoji: '🔄', name: 'Roll Up',                 cat: 'pilates',  dur: '10 reps',desc: 'Flexibilidade e controle' },
+        { emoji: '🦵', name: 'Single Leg Circle',       cat: 'pilates',  dur: '10 reps',desc: 'Estabilidade de quadril' },
+        // Aeróbico leve
+        { emoji: '🚶', name: 'Caminhada Leve',          cat: 'aeróbico', dur: '20 min', desc: 'Ritmo confortável' },
+        { emoji: '🌀', name: 'Polichinelo Suave',       cat: 'aeróbico', dur: '3 min',  desc: 'Baixa intensidade' },
+        // Meditação
+        { emoji: '🫁', name: 'Respiração 4-7-8',        cat: 'meditação',dur: '5 min',  desc: 'Inspira 4s, retém 7s, expira 8s' },
+        { emoji: '🧠', name: 'Body Scan',               cat: 'meditação',dur: '10 min', desc: 'Relaxamento muscular progressivo' },
+      ];
+
+      const cats = ['yoga','pilates','aeróbico','meditação'];
+      const catLabels = { yoga:'🌸 Yoga', pilates:'⚪ Pilates', aeróbico:'🏃 Aeróbico Leve', meditação:'🧠 Meditação' };
+      const catColors = { yoga:'#c77dff', pilates:'#4da6ff', aeróbico:'#39ff9a', meditação:'#ffcc00' };
+
+      const restChecks = loadChecks();
+
+      let html = '<div class="rest-next-badge">Amanhã é dia de treino · <span>' + sess.nextReps + ' reps</span> em cada exercício</div>';
+      html += '<div class="rest-active-title">Descanso Ativo</div>';
+
+      cats.forEach(cat => {
+        const exs = restExercises.filter(e => e.cat === cat);
+        html += '<div class="rest-category" style="color:' + catColors[cat] + '">' + catLabels[cat] + '</div>';
+        exs.forEach(ex => {
+          const key    = 'rest_' + ex.name.replace(/\s+/g,'_');
+          const isDone = !!restChecks[key];
+          html += '<div class="treino-item ' + (isDone ? 'done' : '') + '">'
+            + '<div class="t-check" onclick="toggleCheck(\'' + key + '\')">' + (isDone ? '✓' : '') + '</div>'
+            + '<span class="t-emoji">' + ex.emoji + '</span>'
+            + '<div class="t-info">'
+            +   '<div class="t-name">' + ex.name + '</div>'
+            +   '<div class="t-cat">' + ex.desc + '</div>'
+            + '</div>'
+            + '<div class="t-meta">'
+            +   '<span class="t-qty" style="font-size:0.8rem;color:var(--blue)">' + ex.dur.split(' ')[0] + '</span>'
+            +   '<span class="t-unit">' + (ex.dur.split(' ')[1] || 'reps') + '</span>'
+            + '</div>'
+            + '</div>';
+        });
+      });
+
+      list.innerHTML = html;
+
+      const totalRest  = restExercises.length;
+      const doneRest   = restExercises.filter(e => !!restChecks['rest_' + e.name.replace(/\s+/g,'_')]).length;
+      prog.innerHTML = '<span>' + doneRest + '</span> / ' + totalRest + ' concluídos';
+      document.getElementById('statSessao').innerHTML = '— <small>descanso</small>';
+      document.getElementById('statDone').innerHTML   = doneRest + ' <small>/ ' + totalRest + '</small>';
+      document.getElementById('statWeek').innerHTML   = weekDoneCount() + ' <small>treinos</small>';
       updateNotifBtn();
+      renderChart();
       return;
     }
 
@@ -795,44 +879,40 @@
       const allDone = periodChecks.every(Boolean);
 
       const items = EXERCISES.map(ex => {
-        const key    = `${ex.id}_${period.id}`;
-        const isDone = !!checks[key];
+        const key     = ex.id + '_' + period.id;
+        const isDone  = !!checks[key];
         const isTimer = !!ex.timer;
+        const unit    = ex.unit === 'seg' ? 'seg' : 'reps';
+        const qty     = isTimer ? periodReps : periodReps;
         const timerBtn = isTimer && !isDone
-          ? `<button class="timer-btn" onclick="event.stopPropagation(); openTimer(${periodReps}, '${key}')">▶ INICIAR</button>`
+          ? '<button class="timer-btn" onclick="event.stopPropagation(); openTimer(' + qty + ', \'' + key + '\')">▶ INICIAR</button>'
           : '';
-        return `
-          <div class="treino-item ${isDone ? 'done' : ''}">
-            <div class="t-check" onclick="toggleCheck('${key}')">${isDone ? '✓' : ''}</div>
-            <span class="t-emoji">${ex.emoji}</span>
-            <div class="t-info">
-              <div class="t-name">${ex.name}</div>
-              <div class="t-cat">${ex.cat}</div>
-              ${timerBtn}
-            </div>
-            <div class="t-meta">
-              <span class="t-qty ${isTimer ? 'timer-display' : ''}" id="${isTimer ? `timerInline_${period.id}` : ''}">${periodReps}</span>
-              <span class="t-unit">${ex.unit === 'seg' ? 'seg' : 'reps'}</span>
-            </div>
-          </div>`;
+        return '<div class="treino-item ' + (isDone ? 'done' : '') + '">'
+          + '<div class="t-check" onclick="toggleCheck(\'' + key + '\')">' + (isDone ? '✓' : '') + '</div>'
+          + '<span class="t-emoji">' + ex.emoji + '</span>'
+          + '<div class="t-info">'
+          +   '<div class="t-name">' + ex.name + '</div>'
+          +   '<div class="t-cat">' + ex.cat + '</div>'
+          +   timerBtn
+          + '</div>'
+          + '<div class="t-meta">'
+          +   '<span class="t-qty' + (isTimer ? ' timer-display' : '') + '" id="' + (isTimer ? 'timerInline_' + period.id : '') + '">' + qty + '</span>'
+          +   '<span class="t-unit">' + unit + '</span>'
+          + '</div>'
+          + '</div>';
       }).join('');
 
-      return `
-        <div class="period-block">
-          <div class="period-header ${period.cls} ${allDone ? 'done-period' : ''}">
-            <span class="period-emoji">${period.emoji}</span>
-            <div class="period-info">
-              <div class="period-name">${period.name}</div>
-              <div class="period-time">${period.time}</div>
-            </div>
-            <div class="period-reps">${periodReps}<small>${ex => ex && ex.unit === 'seg' ? 'seg' : 'reps'}</small></div>
-          </div>
-          <div class="treino-list">${items}</div>
-        </div>`;
-    }).join('');
+      const header = '<div class="period-header ' + period.cls + (allDone ? ' done-period' : '') + '">'
+        + '<span class="period-emoji">' + period.emoji + '</span>'
+        + '<div class="period-info">'
+        +   '<div class="period-name">' + period.name + '</div>'
+        +   '<div class="period-time">' + period.time + '</div>'
+        + '</div>'
+        + '<div class="period-reps">' + periodReps + ' <small>reps</small></div>'
+        + '</div>';
 
-    // fix period-reps label (reps/seg mixed — show reps for simplicity)
-    document.querySelectorAll('.period-reps small').forEach(el => el.textContent = 'reps');
+      return '<div class="period-block">' + header + '<div class="period-exercises">' + items + '</div></div>';
+    }).join('');
 
     // Stats
     const totalChecks = EXERCISES.length * 3;
@@ -844,16 +924,54 @@
     updateNotifBtn();
     renderChart();
   }
+// ── Sounds (Howler.js) ──────────────────────────────────────────
+  const soundCheck = new Howl({
+    src: ['https://cdn.freesound.org/previews/536/536108_11861866-lq.mp3'],
+    volume: 0.4,
+    html5: true,
+  });
+  const soundComplete = new Howl({
+    src: ['https://cdn.freesound.org/previews/341/341695_5858296-lq.mp3'],
+    volume: 0.5,
+    html5: true,
+  });
+
+  // ── Confetti ao completar todos ──────────────────────────────────
+  function fireConfetti() {
+    const colors = ['#c8ff00', '#ff6b35', '#39ff9a', '#4da6ff', '#c77dff'];
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors });
+    setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.4 }, colors }), 300);
+  }
 
   // ── Toggle check ────────────────────────────────────────────────
   function toggleCheck(key) {
-    const checks = loadChecks();
-    checks[key] = !checks[key];
+    const checks  = loadChecks();
+    checks[key]   = !checks[key];
     saveChecks(checks);
+
+    const baseId  = key.split('_')[0];
+    const ex      = EXERCISES.find(e => e.id === baseId);
+    const name    = ex ? ex.name : key;
+
+    if (checks[key]) {
+      soundCheck.play();
+      showToast('✓ ' + name + ' concluído!');
+    } else {
+      showToast(name + ' desmarcado');
+    }
+
     renderTreino();
-    const baseId = key.split('_')[0];
-    const ex = EXERCISES.find(e => e.id === baseId);
-    showToast(checks[key] ? `✓ ${ex ? ex.name : key} concluído!` : `${ex ? ex.name : key} desmarcado`);
+
+    // Verifica se completou tudo
+    const sess = calcSession();
+    if (sess.isTraining) {
+      const allKeys = EXERCISES.flatMap(e => ['morning','afternoon','night'].map(p => e.id + '_' + p));
+      const freshChecks = loadChecks();
+      const allDone = allKeys.every(k => !!freshChecks[k]);
+      if (allDone && checks[key]) {
+        setTimeout(() => { soundComplete.play(); fireConfetti(); showToast('🎉 Treino completo!'); }, 200);
+      }
+    }
   }
 
 
@@ -1038,30 +1156,73 @@
     scheduleNotifications();
   }
 
-  // ── Chart semanal ───────────────────────────────────────────────
+  // ── Chart.js semanal ────────────────────────────────────────────
+  let chartInstance = null;
+
   function renderChart() {
-    const data = getCookie('fitlog_checks') || {};
-    const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-    const counts = [];
+    dayjs.locale('pt-br');
+    const data   = getCookie('fitlog_checks') || {};
+    const labels = [];
+    const values = [];
+    const colors = [];
+
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const k = d.toISOString().slice(0,10);
-      const checks = data[k] || {};
-      const n = Object.values(checks).filter(v => v).length;
-      counts.push({ day: days[d.getDay()], count: n, isToday: i === 0 });
+      const d   = dayjs().subtract(i, 'day');
+      const key = d.format('YYYY-MM-DD');
+      const checks = data[key] || {};
+      const count  = Object.values(checks).filter(v => v).length;
+      labels.push(d.format('ddd').toUpperCase());
+      values.push(count);
+      colors.push(i === 0 ? '#c8ff00' : 'rgba(255,107,53,0.5)');
     }
-    const max = Math.max(...counts.map(c => c.count), 1);
-    document.getElementById('chartBars').innerHTML = counts.map(c => {
-      const pct = Math.max((c.count / max) * 100, 5);
-      return `
-        <div class="chart-day">
-          <div class="chart-bar-wrap">
-            <div class="chart-bar ${c.isToday ? 'today' : ''}" style="height:${pct}%"></div>
-          </div>
-          <span class="chart-label ${c.isToday ? 'today-label' : ''}">${c.day}</span>
-        </div>`;
-    }).join('');
+
+    const canvas = document.getElementById('chartBars');
+    if (!canvas) return;
+
+    if (chartInstance) { chartInstance.destroy(); }
+
+    chartInstance = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1a24',
+            borderColor: '#2a2a38',
+            borderWidth: 1,
+            titleColor: '#c8ff00',
+            bodyColor: '#e8e8f0',
+            callbacks: {
+              label: ctx => ' ' + ctx.parsed.y + ' exercícios concluídos',
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#6b6b80', font: { family: 'DM Mono', size: 10 } },
+            grid:  { display: false },
+            border:{ display: false },
+          },
+          y: {
+            ticks: { color: '#6b6b80', font: { family: 'DM Mono', size: 10 }, stepSize: 1 },
+            grid:  { color: 'rgba(255,255,255,0.04)' },
+            border:{ display: false },
+            beginAtZero: true,
+          }
+        }
+      }
+    });
   }
 
   // ── Toast ────────────────────────────────────────────────────────
@@ -1074,11 +1235,11 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
   }
 
-  // ── Date badge ───────────────────────────────────────────────────
+  // ── Date badge (Day.js) ─────────────────────────────────────────
   function setDateBadge() {
-    const opts = { weekday: 'short', day: '2-digit', month: 'short' };
+    dayjs.locale('pt-br');
     document.getElementById('dateBadge').textContent =
-      new Date().toLocaleDateString('pt-BR', opts).toUpperCase();
+      dayjs().format('ddd, DD MMM YYYY').toUpperCase();
   }
 
   // ── Init ─────────────────────────────────────────────────────────
@@ -1087,12 +1248,7 @@
   const sess = calcSession();
   renderBanner(sess);
   renderTreino();
-  // stat-sessao no descanso
-  if (!sess.isTraining) {
-    document.getElementById('statSessao').innerHTML = `— <small>descanso</small>`;
-    document.getElementById('statWeek').innerHTML   = `${weekDoneCount()} <small>treinos</small>`;
-    renderChart();
-  }
+  // stats handled inside renderTreino for both training and rest days
 </script>
 
 <script>
@@ -1106,3 +1262,4 @@
 </script>
 </body>
 </html>
+  
