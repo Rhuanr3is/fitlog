@@ -670,8 +670,8 @@
 <!-- Timer Modal -->
 <div class="timer-modal" id="timerModal">
   <div class="timer-box">
-    <div class="timer-box-label">Exercício · Core</div>
-    <div class="timer-box-title">🧘 Prancha</div>
+    <div class="timer-box-label" id="timerLabel">Exercício · Core</div>
+    <div class="timer-box-title" id="timerTitle">🧘 Prancha</div>
     <div class="timer-ring-wrap">
       <svg viewBox="0 0 160 160">
         <circle class="timer-ring-bg" cx="80" cy="80" r="68"/>
@@ -679,7 +679,7 @@
       </svg>
       <div class="timer-big">
         <span class="timer-big-num" id="timerBigNum">00</span>
-        <span class="timer-big-unit">segundos</span>
+        <span class="timer-big-unit" id="timerUnit">segundos</span>
       </div>
     </div>
     <div class="timer-controls" id="timerControls"></div>
@@ -723,7 +723,7 @@
     { id: 'puxada',      emoji: '🙌', name: 'Puxada Inclinada',            cat: 'Musculação', unit: 'reps' },
   ];
 
-    // ── Estado dos checks (localStorage por data) ─────────────────
+  // ── Estado dos checks (localStorage por data) ─────────────────
   const todayKey = () => new Date().toISOString().slice(0,10);
 
   function loadChecks() {
@@ -810,23 +810,24 @@
     if (!sess.isTraining) {
       const restExercises = [
         // Yoga
-        { emoji: '🧘', name: 'Saudação ao Sol',         cat: 'yoga',     dur: '5 min',  desc: 'Fluxo completo, 3 rounds' },
-        { emoji: '🌿', name: 'Postura do Pombo',        cat: 'yoga',     dur: '2 min',  desc: 'Cada lado — abre quadril' },
-        { emoji: '🌊', name: 'Gato e Vaca',             cat: 'yoga',     dur: '2 min',  desc: 'Mobiliza coluna torácica' },
+        { emoji: '🧘', name: 'Saudação ao Sol',   cat: 'yoga',     dur: '5 min',  desc: 'Fluxo completo, 3 rounds',      timer: true, timerSec: 300  },
+        { emoji: '🌿', name: 'Postura do Pombo',  cat: 'yoga',     dur: '2 min',  desc: 'Cada lado — abre quadril',      timer: true, timerSec: 120  },
+        { emoji: '🌊', name: 'Gato e Vaca',       cat: 'yoga',     dur: '2 min',  desc: 'Mobiliza coluna torácica',      timer: true, timerSec: 120  },
         // Pilates
-        { emoji: '💫', name: 'The Hundred',             cat: 'pilates',  dur: '2 min',  desc: 'Ativa core profundo' },
-        { emoji: '🔄', name: 'Roll Up',                 cat: 'pilates',  dur: '10 reps',desc: 'Flexibilidade e controle' },
-        { emoji: '🦵', name: 'Single Leg Circle',       cat: 'pilates',  dur: '10 reps',desc: 'Estabilidade de quadril' },
+        { emoji: '💫', name: 'The Hundred',       cat: 'pilates',  dur: '2 min',  desc: 'Ativa core profundo',           timer: true, timerSec: 120  },
+        { emoji: '🔄', name: 'Roll Up',           cat: 'pilates',  dur: '2 min',  desc: 'Flexibilidade e controle',      timer: true, timerSec: 120  },
+        { emoji: '🦵', name: 'Single Leg Circle', cat: 'pilates',  dur: '2 min',  desc: 'Estabilidade de quadril',       timer: true, timerSec: 120  },
         // Aeróbico leve
-        { emoji: '🚶', name: 'Caminhada Leve',          cat: 'aeróbico', dur: '20 min', desc: 'Ritmo confortável' },
-        { emoji: '🌀', name: 'Polichinelo Suave',       cat: 'aeróbico', dur: '3 min',  desc: 'Baixa intensidade' },
+        { emoji: '🚶', name: 'Caminhada Leve',    cat: 'aeróbico', dur: '20 min', desc: 'Ritmo confortável',             timer: true, timerSec: 1200 },
+        { emoji: '🌀', name: 'Polichinelo Suave', cat: 'aeróbico', dur: '3 min',  desc: 'Baixa intensidade',             timer: true, timerSec: 180  },
         // Meditação
-        { emoji: '🫁', name: 'Respiração 4-7-8',        cat: 'meditação',dur: '5 min',  desc: 'Inspira 4s, retém 7s, expira 8s' },
-        { emoji: '🧠', name: 'Body Scan',               cat: 'meditação',dur: '10 min', desc: 'Relaxamento muscular progressivo' },
+        { emoji: '🫁', name: 'Respiração 4-7-8',  cat: 'meditação',dur: '5 min',  desc: 'Inspira 4s, retém 7s, expira 8s', timer: true, timerSec: 300 },
+        { emoji: '🧠', name: 'Body Scan',         cat: 'meditação',dur: '10 min', desc: 'Relaxamento muscular progressivo', timer: true, timerSec: 600 },
       ];
 
       const cats = ['yoga','pilates','aeróbico','meditação'];
       const catLabels = { yoga:'🌸 Yoga', pilates:'⚪ Pilates', aeróbico:'🏃 Aeróbico Leve', meditação:'🧠 Meditação' };
+      const catLabelsFull = { yoga:'Yoga', pilates:'Pilates', aeróbico:'Aeróbico Leve', meditação:'Meditação' };
       const catColors = { yoga:'#c77dff', pilates:'#4da6ff', aeróbico:'#39ff9a', meditação:'#ffcc00' };
 
       const restChecks = loadChecks();
@@ -840,12 +841,16 @@
         exs.forEach(ex => {
           const key    = 'rest_' + ex.name.replace(/\s+/g,'_');
           const isDone = !!restChecks[key];
+          const timerBtn = ex.timer && !isDone
+            ? '<button class="timer-btn" onclick="event.stopPropagation(); openTimer(' + ex.timerSec + ', \'' + key + '\', \'' + ex.emoji + ' ' + ex.name + '\', \'' + catLabelsFull[ex.cat] + '\')">▶ INICIAR</button>'
+            : '';
           html += '<div class="treino-item ' + (isDone ? 'done' : '') + '">'
             + '<div class="t-check" onclick="toggleCheck(\'' + key + '\')">' + (isDone ? '✓' : '') + '</div>'
             + '<span class="t-emoji">' + ex.emoji + '</span>'
             + '<div class="t-info">'
             +   '<div class="t-name">' + ex.name + '</div>'
             +   '<div class="t-cat">' + ex.desc + '</div>'
+            +   timerBtn
             + '</div>'
             + '<div class="t-meta">'
             +   '<span class="t-qty" style="font-size:0.8rem;color:var(--blue)">' + ex.dur.split(' ')[0] + '</span>'
@@ -924,7 +929,8 @@
     updateNotifBtn();
     renderChart();
   }
-// ── Sounds (Howler.js) ──────────────────────────────────────────
+
+  // ── Sounds (Howler.js) ──────────────────────────────────────────
   const soundCheck = new Howl({
     src: ['https://cdn.freesound.org/previews/536/536108_11861866-lq.mp3'],
     volume: 0.4,
@@ -983,14 +989,22 @@
 
   const CIRCUMFERENCE = 2 * Math.PI * 68; // r=68
 
-  let timerKey = 'prancha_morning';
+  let timerKey   = 'prancha_morning';
+  let timerLabel = 'Exercício · Core';
+  let timerName  = '🧘 Prancha';
 
-  function openTimer(seconds, key) {
+  function openTimer(seconds, key, name, label) {
     timerTotal   = seconds;
     timerLeft    = seconds;
-    timerKey     = key || 'prancha_morning';
+    timerKey     = key   || 'prancha_morning';
+    timerName    = name  || '🧘 Prancha';
+    timerLabel   = label || 'Exercício · Core';
     timerRunning = false;
     clearInterval(timerInterval);
+    document.getElementById('timerTitle').textContent = timerName;
+    document.getElementById('timerLabel').textContent = timerLabel;
+    // For long timers (>60s) show mm:ss format
+    document.getElementById('timerUnit').textContent  = seconds > 60 ? 'min : seg' : 'segundos';
     document.getElementById('timerModal').classList.add('open');
     updateTimerUI();
   }
@@ -1029,13 +1043,39 @@
     updateTimerUI();
   }
 
+  // ── Web Audio Buzzer ─────────────────────────────────────────────
+  function playBuzzer() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Three beep sequence
+    const beeps = [
+      { freq: 880, start: 0,   dur: 0.15 },
+      { freq: 880, start: 0.2, dur: 0.15 },
+      { freq: 1320,start: 0.4, dur: 0.4  },
+    ];
+
+    beeps.forEach(b => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(b.freq, ctx.currentTime + b.start);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + b.start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + b.start + b.dur);
+      osc.start(ctx.currentTime + b.start);
+      osc.stop(ctx.currentTime + b.start + b.dur + 0.05);
+    });
+  }
+
   function finishTimer() {
     const checks = loadChecks();
     checks[timerKey] = true;
     saveChecks(checks);
+    playBuzzer();
     updateTimerUI();
-    showToast('✓ Prancha concluída!');
-    setTimeout(() => { closeTimer(); renderTreino(); }, 1200);
+    showToast('✓ ' + timerName + ' concluído!');
+    setTimeout(() => { closeTimer(); renderTreino(); }, 1400);
   }
 
   function updateTimerUI() {
@@ -1055,7 +1095,13 @@
     num.className  = 'timer-big-num'  + (finished ? ' finished' : timerRunning ? ' running' : '');
     ring.className = 'timer-ring-fg'  + (finished ? ' finished' : timerRunning ? ' running' : '');
 
-    num.textContent = String(timerLeft).padStart(2, '0');
+    if (timerTotal > 60) {
+      const m = Math.floor(timerLeft / 60);
+      const s = timerLeft % 60;
+      num.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    } else {
+      num.textContent = String(timerLeft).padStart(2, '0');
+    }
 
     // inline display
     const inline = document.getElementById('timerInline');
@@ -1262,4 +1308,3 @@
 </script>
 </body>
 </html>
-  
