@@ -432,6 +432,200 @@
   .notif-btn.active { border-color: var(--green); color: var(--green); background: rgba(57,255,154,0.06); }
   .notif-btn.denied { border-color: var(--red); color: var(--red); cursor: not-allowed; }
 
+
+  /* ── Como Fazer Modal ──────────────────────────────────────────── */
+  .howto-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 200;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px 16px;
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+  }
+  .howto-modal.open { display: flex; }
+
+  .howto-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    padding: 28px;
+    position: relative;
+    margin: auto;
+    animation: slideIn 0.25s ease;
+  }
+
+  .howto-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .howto-close:hover { color: var(--text); border-color: var(--text); }
+
+  .howto-tag {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .howto-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: var(--text);
+    margin-bottom: 16px;
+    padding-right: 36px;
+  }
+
+  .howto-gif {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    min-height: 200px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .howto-gif-placeholder {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px dashed var(--border);
+    background: var(--surface2);
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .howto-muscles {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .muscle-tag {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .muscle-tag.primary { border-color: var(--accent); color: var(--accent); }
+  .muscle-tag.secondary { border-color: var(--accent2); color: var(--accent2); }
+
+  .howto-section-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .howto-steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .howto-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 0.75rem;
+    color: var(--accent);
+    background: rgba(200,255,0,0.08);
+    border: 1px solid rgba(200,255,0,0.2);
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-text {
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .howto-equipment {
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .howto-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .howto-error {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--red);
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+  }
+
+  .howto-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 5px 11px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--blue);
+    border-color: var(--blue);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+  .howto-btn:hover { background: rgba(77,166,255,0.08); }
+
   /* ── Timer da Prancha ───────────────────────────────────────── */
   .timer-btn {
     background: var(--accent);
@@ -667,6 +861,15 @@
 
 </div>
 
+
+<!-- Como Fazer Modal -->
+<div class="howto-modal" id="howtoModal">
+  <div class="howto-box">
+    <button class="howto-close" onclick="closeHowto()">✕</button>
+    <div id="howtoContent"><div class="howto-loading">Carregando...</div></div>
+  </div>
+</div>
+
 <!-- Timer Modal -->
 <div class="timer-modal" id="timerModal">
   <div class="timer-box">
@@ -712,6 +915,44 @@
 
   // ── Lista de exercícios fixos ───────────────────────────────────
   // unit: 'reps' usa o número progressivo | 'seg' usa segundos progressivos
+
+  // ── Free Exercise DB mapping ─────────────────────────────────────
+  // Maps our exercise IDs to search terms in free-exercise-db
+  const EXERCISE_DB_MAP = {
+    flexao:      { search: 'push-up',          bodyPart: 'chest'         },
+    rosca:       { search: 'barbell curl',      bodyPart: 'upper arms'    },
+    afundo:      { search: 'lunge',             bodyPart: 'upper legs'    },
+    agachamento: { search: 'squat',             bodyPart: 'upper legs'    },
+    prancha:     { search: 'plank',             bodyPart: 'waist'         },
+    pantorrha:   { search: 'calf raise',        bodyPart: 'lower legs'    },
+    gluteo:      { search: 'glute bridge',      bodyPart: 'upper legs'    },
+    puxada:      { search: 'inverted row',      bodyPart: 'back'          },
+  };
+
+  const EXERCISE_CACHE = {};
+
+  async function fetchExerciseInfo(exId) {
+    if (EXERCISE_CACHE[exId]) return EXERCISE_CACHE[exId];
+    const map = EXERCISE_DB_MAP[exId];
+    if (!map) return null;
+    try {
+      const url = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json';
+      const res  = await fetch(url);
+      const data = await res.json();
+      // Store all in cache to avoid re-fetching
+      if (!EXERCISE_CACHE['_all']) EXERCISE_CACHE['_all'] = data;
+      const term = map.search.toLowerCase();
+      const match = data.find(e =>
+        e.name.toLowerCase().includes(term) ||
+        (e.aliases && e.aliases.some(a => a.toLowerCase().includes(term)))
+      );
+      EXERCISE_CACHE[exId] = match || null;
+      return EXERCISE_CACHE[exId];
+    } catch (e) {
+      return null;
+    }
+  }
+
   const EXERCISES = [
     { id: 'flexao',      emoji: '💪', name: 'Flexão de Braço',            cat: 'Musculação', unit: 'reps' },
     { id: 'rosca',       emoji: '🏋️', name: 'Rosca Direta',               cat: 'Musculação', unit: 'reps' },
@@ -892,6 +1133,7 @@
         const timerBtn = isTimer && !isDone
           ? '<button class="timer-btn" onclick="event.stopPropagation(); openTimer(' + qty + ', \'' + key + '\')">▶ INICIAR</button>'
           : '';
+        const howtoBtn = '<button class="howto-btn" onclick="event.stopPropagation(); openHowto(\'' + ex.id + '\', \'' + ex.emoji + ' ' + ex.name + '\')">? COMO FAZER</button>';
         return '<div class="treino-item ' + (isDone ? 'done' : '') + '">'
           + '<div class="t-check" onclick="toggleCheck(\'' + key + '\')">' + (isDone ? '✓' : '') + '</div>'
           + '<span class="t-emoji">' + ex.emoji + '</span>'
@@ -899,6 +1141,7 @@
           +   '<div class="t-name">' + ex.name + '</div>'
           +   '<div class="t-cat">' + ex.cat + '</div>'
           +   timerBtn
+          +   howtoBtn
           + '</div>'
           + '<div class="t-meta">'
           +   '<span class="t-qty' + (isTimer ? ' timer-display' : '') + '" id="' + (isTimer ? 'timerInline_' + period.id : '') + '">' + qty + '</span>'
@@ -929,6 +1172,58 @@
     updateNotifBtn();
     renderChart();
   }
+
+
+  // ── Como Fazer (free-exercise-db) ───────────────────────────────
+  function openHowto(exId, displayName) {
+    document.getElementById('howtoModal').classList.add('open');
+    document.getElementById('howtoContent').innerHTML = '<div class="howto-loading">Buscando exercício...</div>';
+    loadHowto(exId, displayName);
+  }
+
+  function closeHowto() {
+    document.getElementById('howtoModal').classList.remove('open');
+  }
+
+  async function loadHowto(exId, displayName) {
+    const content = document.getElementById('howtoContent');
+    try {
+      const ex = await fetchExerciseInfo(exId);
+      if (!ex) {
+        content.innerHTML = '<div class="howto-error">Exercício não encontrado na base de dados.<br><small>Tente buscar manualmente no YouTube.</small></div>';
+        return;
+      }
+
+      const primaryMuscles   = (ex.primaryMuscles   || []).map(m => '<span class="muscle-tag primary">' + m + '</span>').join('');
+      const secondaryMuscles = (ex.secondaryMuscles || []).map(m => '<span class="muscle-tag secondary">' + m + '</span>').join('');
+      const equipment = ex.equipment ? '<div class="howto-equipment">🏋️ Equipamento: <strong>' + ex.equipment + '</strong></div>' : '';
+
+      const gifHtml = ex.images && ex.images.length > 0
+        ? '<img class="howto-gif" src="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/' + ex.images[0] + '" alt="' + ex.name + '" onerror="this.style.display='none'">'
+        : '<div class="howto-gif-placeholder">GIF não disponível</div>';
+
+      const steps = (ex.instructions || ['Sem instruções disponíveis.'])
+        .map((step, i) => '<li class="howto-step"><span class="step-num">' + (i+1) + '</span><span class="step-text">' + step + '</span></li>')
+        .join('');
+
+      content.innerHTML =
+        '<div class="howto-tag">' + (ex.category || 'Exercício') + ' · ' + (ex.mechanic || '') + '</div>'
+        + '<div class="howto-title">' + displayName + '</div>'
+        + gifHtml
+        + '<div class="howto-muscles">' + primaryMuscles + secondaryMuscles + '</div>'
+        + equipment
+        + '<div class="howto-section-label">Passo a passo</div>'
+        + '<ul class="howto-steps">' + steps + '</ul>';
+
+    } catch(e) {
+      content.innerHTML = '<div class="howto-error">Erro ao carregar. Verifique sua conexão.</div>';
+    }
+  }
+
+  // Close howto on backdrop
+  document.getElementById('howtoModal').addEventListener('click', function(e) {
+    if (e.target === this) closeHowto();
+  });
 
   // ── Sounds (Howler.js) ──────────────────────────────────────────
   const soundCheck = new Howl({
